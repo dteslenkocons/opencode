@@ -206,4 +206,3 @@ export namespace Filesystem {
     }
     return result
   }
-}
