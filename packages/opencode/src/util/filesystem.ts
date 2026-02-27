@@ -94,7 +94,6 @@ export namespace Filesystem {
   export function getEncoding(): Encoding {
     return ENCODING
   }
-}
 
   export async function writeStream(
     p: string,
@@ -206,3 +205,4 @@ export namespace Filesystem {
     }
     return result
   }
+}
