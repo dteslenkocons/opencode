@@ -7,6 +7,21 @@ import { Readable } from "stream"
 import { pipeline } from "stream/promises"
 import { Glob } from "./glob"
 
+// Determine encoding from environment variable or default to utf-8
+const ENCODING_ENV_VAR = "OPENCODE_TEXT_ENCODING"
+const ALLOWED_ENCODINGS = ["utf-8", "cp1251", "cp866"] as const
+type Encoding = typeof ALLOWED_ENCODINGS[number]
+
+function getEncoding(): Encoding {
+  const envValue = process.env[ENCODING_ENV_VAR]?.toLowerCase()
+  if (envValue && ALLOWED_ENCODINGS.includes(envValue as Encoding)) {
+    return envValue as Encoding
+  }
+  return "utf-8"
+}
+
+export const ENCODING = getEncoding()
+
 export namespace Filesystem {
   // Fast sync version for metadata checks
   export async function exists(p: string): Promise<boolean> {
@@ -31,11 +46,11 @@ export namespace Filesystem {
   }
 
   export async function readText(p: string): Promise<string> {
-    return readFile(p, "utf-8")
+    return readFile(p, ENCODING)
   }
 
   export async function readJson<T = any>(p: string): Promise<T> {
-    return JSON.parse(await readFile(p, "utf-8"))
+    return JSON.parse(await readFile(p, ENCODING))
   }
 
   export async function readBytes(p: string): Promise<Buffer> {
@@ -75,6 +90,11 @@ export namespace Filesystem {
   export async function writeJson(p: string, data: unknown, mode?: number): Promise<void> {
     return write(p, JSON.stringify(data, null, 2), mode)
   }
+
+  export function getEncoding(): Encoding {
+    return ENCODING
+  }
+}
 
   export async function writeStream(
     p: string,

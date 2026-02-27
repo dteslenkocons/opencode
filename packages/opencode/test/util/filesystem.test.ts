@@ -320,16 +320,57 @@ describe("filesystem", () => {
     })
   })
 
+  describe("encoding", () => {
+    test("should default to utf-8", () => {
+      expect(Filesystem.getEncoding()).toBe("utf-8")
+    })
+    
+    test("should respect OPENCODE_TEXT_ENCODING environment variable", () => {
+      // Save original env var
+      const originalEnv = process.env.OPENCODE_TEXT_ENCODING
+      try {
+        // Test with cp1251
+        process.env.OPENCODE_TEXT_ENCODING = "cp1251"
+        // Re-import to reload the module with new env var
+        // @ts-ignore
+        delete require.cache[require.resolve("../../src/util/filesystem")]
+        // @ts-ignore
+        const { Filesystem } = require("../../src/util/filesystem")
+        expect(Filesystem.getEncoding()).toBe("cp1251")
+        
+        // Test with cp866
+        process.env.OPENCODE_TEXT_ENCODING = "cp866"
+        // @ts-ignore
+        delete require.cache[require.resolve("../../src/util/filesystem")]
+        // @ts-ignore
+        const { Filesystem: Filesystem2 } = require("../../src/util/filesystem")
+        expect(Filesystem2.getEncoding()).toBe("cp866")
+        
+        // Test with invalid value (should fallback to utf-8)
+        process.env.OPENCODE_TEXT_ENCODING = "invalid"
+        // @ts-ignore
+        delete require.cache[require.resolve("../../src/util/filesystem")]
+        // @ts-ignore
+        const { Filesystem: Filesystem3 } = require("../../src/util/filesystem")
+        expect(Filesystem3.getEncoding()).toBe("utf-8")
+      } finally {
+        // Restore original env var
+        process.env.OPENCODE_TEXT_ENCODING = originalEnv
+      }
+    })
+  })
+
   describe("writeStream()", () => {
-    test("writes from Web ReadableStream", async () => {
-      await using tmp = await tmpdir()
-      const filepath = path.join(tmp.path, "streamed.txt")
-      const content = "Hello from stream!"
-      const encoder = new TextEncoder()
-      const stream = new ReadableStream({
-        start(controller) {
-          controller.enqueue(encoder.encode(content))
-          controller.close()
+    test("writes executable with permissions", async () => {
+      await using tmp = await tmpdir({
+        init: async (dir) => {
+          const specialDir = path.join(dir, "special")
+          await fs.mkdir(specialDir)
+          return specialDir
+        },
+        dispose: async (dir) => {
+          // Custom cleanup logic
+          await fs.rm(path.join(dir, "special"), { recursive: true })
         },
       })
 
