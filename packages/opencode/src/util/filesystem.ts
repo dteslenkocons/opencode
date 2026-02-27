@@ -6,6 +6,7 @@ import { dirname, join, relative } from "path"
 import { Readable } from "stream"
 import { pipeline } from "stream/promises"
 import { Glob } from "./glob"
+import * as iconv from "iconv-lite"
 
 // Determine encoding from environment variable or default to utf-8
 const ENCODING_ENV_VAR = "OPENCODE_TEXT_ENCODING"
@@ -46,11 +47,12 @@ export namespace Filesystem {
   }
 
   export async function readText(p: string): Promise<string> {
-    return readFile(p, ENCODING)
+    const buffer = await readFile(p)
+    return iconv.decode(buffer, ENCODING)
   }
 
   export async function readJson<T = any>(p: string): Promise<T> {
-    return JSON.parse(await readFile(p, ENCODING))
+    return JSON.parse(await readFile(p, "utf-8"))
   }
 
   export async function readBytes(p: string): Promise<Buffer> {
@@ -66,7 +68,15 @@ export namespace Filesystem {
     return typeof e === "object" && e !== null && "code" in e && (e as { code: string }).code === "ENOENT"
   }
 
-  export async function write(p: string, content: string | Buffer | Uint8Array, mode?: number): Promise<void> {
+  export async function write(p: string, content: string | Buffer | Uint8Array, mode?: number, encoding?: Encoding): Promise<void> {
+
+    // If encoding is not provided, use default
+    const effectiveEncoding = encoding ?? ENCODING;
+    if (!["utf-8", "ascii", "base64", "hex"].includes(effectiveEncoding)) {
+        const buffer = iconv.encode(content, effectiveEncoding);
+        content = buffer
+    }
+
     try {
       if (mode) {
         await writeFile(p, content, { mode })
@@ -87,8 +97,8 @@ export namespace Filesystem {
     }
   }
 
-  export async function writeJson(p: string, data: unknown, mode?: number): Promise<void> {
-    return write(p, JSON.stringify(data, null, 2), mode)
+  export async function writeJson(p: string, data: unknown, mode?: number, encoding?: "utf-8"): Promise<void> {
+    return write(p, JSON.stringify(data, null, 2), mode, encoding ?? "utf-8")
   }
 
   export function getEncoding(): Encoding {
