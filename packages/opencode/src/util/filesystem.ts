@@ -69,27 +69,30 @@ export namespace Filesystem {
   }
 
   export async function write(p: string, content: string | Buffer | Uint8Array, mode?: number, encoding?: Encoding): Promise<void> {
-
     // If encoding is not provided, use default
     const effectiveEncoding = encoding ?? ENCODING;
-    if (!["utf-8", "ascii", "base64", "hex"].includes(effectiveEncoding)) {
-        const buffer = iconv.encode(content, effectiveEncoding);
-        content = buffer
+
+    // Handle content type appropriately
+    let writeContent: string | Buffer | Uint8Array = content;
+    
+    // Only apply encoding conversion if content is a string and we need to convert it
+    if (typeof content === "string" && !["utf-8", "ascii", "base64", "hex"].includes(effectiveEncoding)) {
+      writeContent = iconv.encode(content, effectiveEncoding);
     }
 
     try {
       if (mode) {
-        await writeFile(p, content, { mode })
+        await writeFile(p, writeContent, { mode })
       } else {
-        await writeFile(p, content)
+        await writeFile(p, writeContent)
       }
     } catch (e) {
       if (isEnoent(e)) {
         await mkdir(dirname(p), { recursive: true })
         if (mode) {
-          await writeFile(p, content, { mode })
+          await writeFile(p, writeContent, { mode })
         } else {
-          await writeFile(p, content)
+          await writeFile(p, writeContent)
         }
         return
       }
