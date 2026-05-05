@@ -462,6 +462,10 @@ describe("filesystem", () => {
           await fs.rm(path.join(dir, "special"), { recursive: true })
         },
       })
+      const filepath = path.join(tmp.path, "special", "script.sh")
+      const content = "#!/bin/bash\necho hello"
+      const { Readable } = await import("stream")
+      const stream = Readable.from([content])
 
       await Filesystem.writeStream(filepath, stream)
 
