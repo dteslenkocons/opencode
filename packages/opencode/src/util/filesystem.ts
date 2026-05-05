@@ -11,7 +11,7 @@ const ENCODING_ENV_VAR = "OPENCODE_TEXT_ENCODING"
 const ALLOWED_ENCODINGS = ["utf-8", "cp1251", "cp866"] as const
 type Encoding = typeof ALLOWED_ENCODINGS[number]
 
-function getEncoding(): Encoding {
+function initEncoding(): Encoding {
   const envValue = process.env[ENCODING_ENV_VAR]?.toLowerCase()
   if (envValue && ALLOWED_ENCODINGS.includes(envValue as Encoding)) {
     return envValue as Encoding
@@ -19,7 +19,7 @@ function getEncoding(): Encoding {
   return "utf-8"
 }
 
-export const ENCODING = getEncoding()
+export const ENCODING = initEncoding()
 
 // Fast sync version for metadata checks
 export async function exists(p: string): Promise<boolean> {
