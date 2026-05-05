@@ -460,6 +460,7 @@ describe("filesystem", () => {
         dispose: async (dir) => {
           // Custom cleanup logic
           await fs.rm(path.join(dir, "special"), { recursive: true })
+          return dir
         },
       })
       const filepath = path.join(tmp.path, "special", "script.sh")
